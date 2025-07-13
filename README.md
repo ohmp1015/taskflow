@@ -1,110 +1,165 @@
 # Taskflow
 
-Taskflow is a modern web application built with [Next.js](https://nextjs.org) and React. It is designed to provide a seamless and efficient task management experience, leveraging powerful libraries and services such as Convex for backend data management, Clerk for authentication, and Edgestore for real-time data synchronization.
+**Taskflow** is a modern task management web application built with [Next.js](https://nextjs.org), [React](https://reactjs.org), and [TailwindCSS](https://tailwindcss.com). It offers real-time collaboration, secure authentication, and a clean UI to manage tasks and documents seamlessly.
 
-## Project Overview
+> Powered by **Convex** for backend logic, **Clerk** for user authentication, and **Edgestore** for file storage and real-time sync.
 
-This project uses Next.js for server-side rendering and routing, React for building UI components, and TailwindCSS for styling. It integrates Convex as a backend platform to handle database queries and mutations with ease. Clerk is used to manage user authentication and authorization securely. Edgestore is employed to provide real-time data synchronization capabilities, ensuring that users see up-to-date information instantly.
+---
 
-## Installation
+## 🚀 Features
 
-To get started, clone the repository and install the dependencies:
+* 🧠 Built with Next.js App Router
+* 💾 Real-time data handling with Convex
+* 🔐 Secure auth using Clerk
+* ☁️ Edge-powered file uploads via Edgestore
+* 🎨 Responsive and themeable UI with TailwindCSS
+* 🧱 Modular component structure
+* 🧠 State management using Zustand
+
+---
+
+## 📁 Project Structure
+
+```
+.
+├── app/                   # App directory (Next.js routing)
+│   ├── (main)/            # Authenticated experience
+│   ├── (marketing)/       # Landing and public pages
+│   ├── (public)/          # Public-facing routes
+│   ├── api/               # API routes (e.g., for uploads)
+│   ├── globals.css        # Global styles
+│   └── layout.tsx         # Root layout
+├── components/            # Reusable and route-specific components
+│   ├── main/              # Components for main user app
+│   ├── marketing/         # Components for marketing pages
+│   ├── modals/            # Modal components
+│   ├── providers/         # Context and theme providers
+│   ├── ui/                # Shared UI primitives (Button, Input, etc.)
+│   └── upload/            # Upload UI components
+├── convex/                # Backend logic (Convex)
+│   ├── schema.ts          # Convex schema
+│   ├── documents.ts       # Document logic
+│   └── _generated/        # Auto-generated Convex files
+├── hooks/                # Custom React hooks
+├── lib/                  # Utility functions and Edgestore logic
+├── public/               # Static assets
+├── .env.local.example    # Example environment config
+├── tailwind.config.ts    # Tailwind configuration
+├── next.config.ts        # Next.js configuration
+├── tsconfig.json         # TypeScript configuration
+└── README.md             # Project documentation
+```
+
+---
+
+## 🛠️ Installation
+
+First, clone the repository and install dependencies:
 
 ```bash
 npm install
-```
-
-or
-
-```bash
+# or
 yarn install
-```
-
-or
-
-```bash
+# or
 pnpm install
 ```
 
-## Environment Variables
+---
 
-This project requires certain environment variables to be set for Convex, Clerk, and Edgestore to function correctly. Create a `.env.local` file in the root directory of the project and add the following variables:
+## 🔑 Environment Variables
+
+Create a `.env.local` file in the root directory and add the following:
 
 ```env
-# Convex configuration
+# Convex
 NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url
 
-# Clerk configuration
+# Clerk
 NEXT_PUBLIC_CLERK_FRONTEND_API=your_clerk_frontend_api
 CLERK_API_KEY=your_clerk_api_key
 
-# Edgestore configuration
+# Edgestore
 NEXT_PUBLIC_EDGESTORE_URL=your_edgestore_url
 ```
 
-Replace the placeholder values with your actual service URLs and API keys. The `.env.local` file is ignored by git and should not be committed to version control.
+---
 
-## Running the Development Server
+## 🧪 Development
 
-Start the development server with:
+Run the development server:
 
 ```bash
 npm run dev
 ```
 
-or
+Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
-```bash
-yarn dev
-```
+---
 
-or
-
-```bash
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the application. The page will reload automatically as you make changes.
-
-## Building and Starting for Production
-
-To build the application for production, run:
+## 📦 Build for Production
 
 ```bash
 npm run build
-```
-
-To start the production server after building, run:
-
-```bash
 npm start
 ```
 
-## Dependencies
+---
 
-Key dependencies used in this project include:
+## 🧱 Core Dependencies
 
-- [Next.js](https://nextjs.org) - React framework for production
-- [React](https://reactjs.org) - JavaScript library for building user interfaces
-- [TailwindCSS](https://tailwindcss.com) - Utility-first CSS framework
-- [Convex](https://convex.dev) - Backend platform for data management
-- [Clerk](https://clerk.com) - User authentication and management
-- [Edgestore](https://edgestore.dev) - Real-time data synchronization
-- Various UI and utility libraries such as Radix UI, Zustand, Zod, and more
+| Package       | Purpose                            |
+| ------------- | ---------------------------------- |
+| `next`        | Framework for SSR and routing      |
+| `react`       | UI library                         |
+| `tailwindcss` | Styling with utility classes       |
+| `convex`      | Real-time backend and database     |
+| `clerk`       | Authentication and user management |
+| `edgestore`   | File uploads and real-time sync    |
+| `zod`         | Schema validation                  |
+| `zustand`     | State management                   |
 
-For a full list of dependencies, see the `package.json` file.
+---
 
-## Learn More
+## 🔍 Learn More
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [React Documentation](https://reactjs.org/docs/getting-started.html)
-- [TailwindCSS Documentation](https://tailwindcss.com/docs)
-- [Convex Documentation](https://docs.convex.dev)
-- [Clerk Documentation](https://docs.clerk.com)
-- [Edgestore Documentation](https://docs.edgestore.dev)
+* [Next.js Docs](https://nextjs.org/docs)
+* [Convex Docs](https://docs.convex.dev)
+* [Clerk Docs](https://docs.clerk.com)
+* [Edgestore Docs](https://docs.edgestore.dev)
+* [Tailwind Docs](https://tailwindcss.com/docs)
 
-## Deployment
+---
 
-The easiest way to deploy this Next.js app is using the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🌐 Deployment
 
-For more deployment options, see the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying).
+The easiest way to deploy this app is through [Vercel](https://vercel.com), with zero-config support for Next.js.
+
+For manual deployment:
+
+* Set environment variables
+* Build the app: `npm run build`
+* Serve with: `npm start` or any Node.js hosting platform
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! To get started:
+
+1. Fork the repo
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m "Add new feature"`
+4. Push to GitHub: `git push origin feature/my-feature`
+5. Open a Pull Request
+
+---
+
+## 📸 Preview
+
+> *Add a screenshot here if you have one!*
+
+---
+
+## 📄 License
+
+MIT License © 2025 YourName or YourTeam
