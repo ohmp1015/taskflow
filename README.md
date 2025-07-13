@@ -162,4 +162,4 @@ Contributions are welcome! To get started:
 
 ## 📄 License
 
-MIT License © 2025 YourName or YourTeam
+License Name © 2025 YourName or YourTeam
