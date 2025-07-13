@@ -5,6 +5,11 @@
 > Powered by **Convex** for backend logic, **Clerk** for user authentication, and **Edgestore** for file storage and real-time sync.
 
 ---
+## Project Overview
+
+This project uses Next.js for server-side rendering and routing, React for building UI components, and TailwindCSS for styling. It integrates Convex as a backend platform to handle database queries and mutations with ease. Clerk is used to manage user authentication and authorization securely. Edgestore is employed to provide real-time data synchronization capabilities, ensuring that users see up-to-date information instantly.
+
+---
 
 ## 🚀 Features
 
