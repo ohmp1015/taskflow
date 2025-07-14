@@ -20,6 +20,11 @@ This project uses Next.js for server-side rendering and routing, React for build
 * 🎨 Responsive and themeable UI with TailwindCSS
 * 🧱 Modular component structure
 * 🧠 State management using Zustand
+* 🔗 Real-time document sharing with live presence and access control
+* 🌍 Multilingual document translation with save and switch options
+* 🤖 AI Chat Assistant to query document content
+* 📄 Download documents as clean, styled PDFs
+* 🔔 Toast feedback on key user actions
 
 ---
 
@@ -85,6 +90,9 @@ CLERK_API_KEY=your_clerk_api_key
 
 # Edgestore
 NEXT_PUBLIC_EDGESTORE_URL=your_edgestore_url
+
+# OpenAI
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 ---
@@ -112,16 +120,19 @@ npm start
 
 ## 🧱 Core Dependencies
 
-| Package       | Purpose                            |
-| ------------- | ---------------------------------- |
-| `next`        | Framework for SSR and routing      |
-| `react`       | UI library                         |
-| `tailwindcss` | Styling with utility classes       |
-| `convex`      | Real-time backend and database     |
-| `clerk`       | Authentication and user management |
-| `edgestore`   | File uploads and real-time sync    |
-| `zod`         | Schema validation                  |
-| `zustand`     | State management                   |
+| Package           | Purpose                                  |
+| ---------------- | ---------------------------------------- |
+| `next`           | Framework for SSR and routing            |
+| `react`          | UI library                               |
+| `tailwindcss`    | Styling with utility classes             |
+| `convex`         | Real-time backend and database           |
+| `clerk`          | Authentication and user management       |
+| `edgestore`      | File uploads and real-time sync          |
+| `zod`            | Schema validation                        |
+| `zustand`        | State management                         |
+| `html2pdf.js`    | Clean PDF downloads                      |
+| `react-hot-toast`| Toast notifications                      |
+| `openai`         | AI integration for chat-to-document      |
 
 ---
 
@@ -131,6 +142,7 @@ npm start
 * [Convex Docs](https://docs.convex.dev)
 * [Clerk Docs](https://docs.clerk.com)
 * [Edgestore Docs](https://docs.edgestore.dev)
+* [OpenAI Docs](https://platform.openai.com/docs)
 * [Tailwind Docs](https://tailwindcss.com/docs)
 
 ---
