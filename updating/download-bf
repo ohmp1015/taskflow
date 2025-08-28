@@ -1,0 +1,94 @@
+// ✅ FILE: /lib/pdf-export.ts
+
+// Utility function that converts a DOM node to a clean PDF using html2pdf.js
+// Requires elementId (HTML element with your document content) and fileName
+import html2pdf from "html2pdf.js";
+import { toast } from "react-hot-toast"; // toast for user feedback
+
+export const exportToPDF = (elementId: string, fileName: string) => {
+  const element = document.getElementById(elementId);
+  if (!element) return toast.error("❌ Document not found.");
+
+  const opt = {
+    margin: 0.5, // inches
+    filename: `${fileName}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+  };
+
+  html2pdf()
+    .from(element)
+    .set(opt)
+    .save()
+    .then(() => toast.success("✅ Document downloaded as PDF!"))
+    .catch(() => toast.error("⚠️ Failed to download PDF."));
+};
+
+
+// ✅ FILE: /components/document/toolbar.tsx
+
+// Add this import at the top
+import { exportToPDF } from "@/lib/pdf-export";
+
+// Inside your component, use this button where document actions are placed
+<Button
+  onClick={() => exportToPDF(`document-content-${doc._id}`, doc.title)}
+  className="text-sm"
+>
+  Download PDF
+</Button>
+
+
+// ✅ FILE: /components/editor.tsx (or the file rendering your document)
+
+// Wrap your document content in a container with a unique ID
+<div id={`document-content-${documentId}`} className="prose max-w-none">
+  {/* You can render HTML content directly */}
+  <div dangerouslySetInnerHTML={{ __html: content }} />
+</div>
+
+// Optional: If you use Markdown or TipTap, make sure rendered content appears inside this wrapper
+
+
+// ✅ INSTALLATION STEP (run once):
+// Terminal commands to install html2pdf and toast
+// npm install html2pdf.js react-hot-toast
+
+
+// ✅ FILE: /components/providers/toast-provider.tsx
+
+// Toast UI provider component (wraps root layout)
+"use client";
+
+import { Toaster } from "react-hot-toast";
+
+export const ToastProvider = () => {
+  return <Toaster position="top-center" />;
+};
+
+
+// ✅ FILE: /app/layout.tsx (or app/providers.tsx)
+
+// Add this so toasts appear across the app
+import { ToastProvider } from "@/components/providers/toast-provider";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <ToastProvider />
+        {children}
+      </body>
+    </html>
+  );
+}
+
+
+// ✅ RESULT:
+// - Document content wrapped with unique ID
+// - Button triggers download as PDF
+// - Toast feedback on success or error
+// - PDF is styled with Tailwind "prose" class and named after the doc title
+
+// 🎉 Document download as PDF now works with user feedback!

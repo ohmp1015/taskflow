@@ -1,32 +1,14 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/providers/theme-provider";
-import ConvexClientProvider from "@/components/providers/convex-provider";
-import { Toaster } from "sonner";
-import { ModalProvider } from "@/components/providers/modal-provider";
-import { EdgeStoreProvider } from "@/lib/edgestore";
-import React from "react";
+import { ConvexClientProvider } from "@/components/providers/convex-provider";
+import { Toaster } from "@/components/providers/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Taskflow",
-  description: "The connected workspace where better, faster work happens.",
-  icons: {
-    icon: [
-      {
-        media: "(prefers-color-scheme: light)",
-        url: "/logo.svg",
-        href: "/logo.svg",
-      },
-      {
-        media: "(prefers-color-scheme: dark)",
-        url: "/logo-dark.svg",
-        href: "/logo-dark.svg",
-      },
-    ],
-  },
+  description: "A collaborative document editor",
 };
 
 export default function RootLayout({
@@ -35,22 +17,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={inter.className}>
         <ConvexClientProvider>
-          <EdgeStoreProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-              storageKey="taskflow-theme-2"
-            >
-              <Toaster position="bottom-center" />
-              <ModalProvider />
-              {children}
-            </ThemeProvider>
-          </EdgeStoreProvider>
+          {children}
+          <Toaster />
         </ConvexClientProvider>
       </body>
     </html>

@@ -1,0 +1,178 @@
+// ✅ FILE: /lib/translate.ts
+
+// Function to call the backend API route for translation
+// Sends the text and desired target language to the server
+// Returns the translated version and the original detected language
+export async function translateText(text: string, targetLang: string): Promise<{ translated: string, detectedLang: string }> {
+  const res = await fetch("/api/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, targetLang }),
+  });
+
+  if (!res.ok) throw new Error("Translation failed");
+  return res.json();
+}
+
+
+// ✅ FILE: /app/api/translate/route.ts
+
+import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
+
+// Create an instance of OpenAI with API key from .env.local
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+
+// Handles POST request for translating text
+export async function POST(req: NextRequest) {
+  const { text, targetLang } = await req.json();
+
+  // Prompt to detect original language
+  const detectionPrompt = `Identify the language of this text:\n\n${text}`;
+  // Prompt to translate text into target language
+  const translationPrompt = `Translate the following text to ${targetLang}:\n\n${text}`;
+
+  // Perform both detection and translation using OpenAI GPT-4
+  const [detLangRes, transRes] = await Promise.all([
+    openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: detectionPrompt }],
+    }),
+    openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: translationPrompt }],
+    })
+  ]);
+
+  // Extract responses
+  const detectedLang = detLangRes.choices[0].message.content?.trim() || "Unknown";
+  const translated = transRes.choices[0].message.content?.trim() || "";
+
+  // Return both translated content and detected original language
+  return NextResponse.json({ translated, detectedLang });
+}
+
+
+// ✅ FILE: /components/document/translate-button.tsx
+
+"use client";
+
+import { useEffect, useState } from "react";
+import { translateText } from "@/lib/translate";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
+interface TranslateButtonProps {
+  content: string;
+  documentId: string;
+}
+
+// Component to display language selector, translate button, and translated content
+export function TranslateButton({ content, documentId }: TranslateButtonProps) {
+  const [translated, setTranslated] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState("Hindi"); // default selected language
+  const [originalLang, setOriginalLang] = useState("");
+
+  // Convex mutation to save translated content
+  const saveTranslation = useMutation(api.documents.saveTranslation);
+
+  // Handle translation process and save result to DB
+  const handleTranslate = async () => {
+    setLoading(true);
+    try {
+      const result = await translateText(content, lang);
+      setTranslated(result.translated);
+      setOriginalLang(result.detectedLang);
+
+      await saveTranslation({
+        documentId,
+        targetLang: lang,
+        content: result.translated,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 mt-6">
+      {/* Language selection dropdown and trigger button */}
+      <div className="flex items-center gap-2">
+        <select
+          className="border p-1 rounded"
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+        >
+          <option value="Hindi">Hindi</option>
+          <option value="Gujarati">Gujarati</option>
+          <option value="Spanish">Spanish</option>
+          <option value="French">French</option>
+        </select>
+        <Button onClick={handleTranslate} disabled={loading}>
+          {loading ? "Translating..." : "Translate & Save"}
+        </Button>
+      </div>
+
+      {/* Show detected language if available */}
+      {originalLang && (
+        <p className="text-sm text-gray-500">Detected language: {originalLang}</p>
+      )}
+
+      {/* Show translated content */}
+      {translated && (
+        <Textarea
+          value={translated}
+          readOnly
+          rows={6}
+          className="w-full"
+        />
+      )}
+    </div>
+  );
+}
+
+
+// ✅ FILE: /convex/documents.ts (Add this mutation)
+
+// Convex mutation to save a translated version of a document
+export const saveTranslation = mutation({
+  args: {
+    documentId: v.id("documents"),
+    targetLang: v.string(),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("translatedDocuments", {
+      documentId: args.documentId,
+      targetLang: args.targetLang,
+      content: args.content,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+
+// ✅ FILE: /convex/schema.ts (add this table)
+
+// Table to store translated versions of documents
+translatedDocuments: defineTable({
+  documentId: v.id("documents"),
+  targetLang: v.string(),
+  content: v.string(),
+  createdAt: v.number(),
+}).index("by_document", ["documentId"]),
+
+
+// ✅ FILE: /app/(main)/document/[id]/page.tsx (update usage)
+
+// Import TranslateButton
+import { TranslateButton } from "@/components/document/translate-button";
+
+// Inside page component:
+// Add the translation UI below the editor
+<TranslateButton content={doc.content} documentId={documentId} />

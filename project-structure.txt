@@ -1,0 +1,108 @@
+Project structure for directory "c:/Users/ohmp1/OneDrive/Desktop/tf/taskflow":
+
+- .gitattributes
+- .gitignore
+- components.json
+- eslint.config.mjs
+- next.config.ts
+- package-lock.json
+- package.json
+- postcss.config.mjs
+- README.md
+- tailwind.config.ts
+- tsconfig.json
+- app/
+  - error.tsx
+  - favicon.ico
+  - globals.css
+  - layout.tsx
+  - not-found.tsx
+  - (main)/
+  - (marketing)/
+  - (public)/
+  - api/
+    - edgestore/
+      - [...edgestore]/
+- components/
+  - cover.tsx
+  - editor.tsx
+  - icon-picker.tsx
+  - mode-toggle.tsx
+  - search-command.tsx
+  - single-image-dropzone.tsx
+  - spinner.tsx
+  - toolbar.tsx
+  - main/
+    - banner.tsx
+    - document-list.tsx
+    - item.tsx
+    - menu.tsx
+    - navbar.tsx
+    - navigation.tsx
+    - publish.tsx
+    - title.tsx
+    - trash-box.tsx
+    - user-item.tsx
+  - marketing/
+    - footer.tsx
+    - heading.tsx
+    - heroes.tsx
+    - logo.tsx
+    - navbar.tsx
+  - modals/
+    - confirm-modal.tsx
+    - cover-image-modal.tsx
+    - settings-modal.tsx
+  - providers/
+    - convex-provider.tsx
+    - modal-provider.tsx
+    - theme-provider.tsx
+  - ui/
+    - alert-dialog.tsx
+    - avatar.tsx
+    - button.tsx
+    - command.tsx
+    - dialog.tsx
+    - dropdown-menu.tsx
+    - input.tsx
+    - label.tsx
+    - popover.tsx
+    - skeleton.tsx
+  - upload/
+    - progress-circle.tsx
+    - single-image.tsx
+    - uploader-provider.tsx
+- convex/
+  - auth.config.js
+  - documents.ts
+  - README.md
+  - schema.ts
+  - tsconfig.json
+  - _generated/
+    - api.d.ts
+    - api.js
+    - dataModel.d.ts
+    - server.d.ts
+    - server.js
+- hooks/
+  - use-cover-image.tsx
+  - use-origin.tsx
+  - use-scroll-top.tsx
+  - use-search.tsx
+  - use-settings.tsx
+- lib/
+  - edgestore.ts
+  - utils.ts
+- public/
+  - documents-dark.png
+  - documents.png
+  - empty-dark.png
+  - empty.png
+  - error-dark.png
+  - error.png
+  - logo-dark.svg
+  - logo.svg
+  - next.svg
+  - reading-dark.png
+  - reading.png
+  - vercel.svg

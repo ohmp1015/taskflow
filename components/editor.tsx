@@ -1,45 +1,35 @@
 "use client";
 
-import { useTheme } from "next-themes";
-import { useEdgeStore } from "@/lib/edgestore";
-import { BlockNoteEditor } from "@blocknote/core";
-import { useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteView } from "@blocknote/mantine";
-import "@blocknote/mantine/style.css";
-import "@blocknote/core/fonts/inter.css";
+import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EditorProps {
-  onChange: (value: string) => void;
   initialContent?: string;
-  editable?: boolean;
+  documentId: string;
 }
 
-const Editor = ({ onChange, initialContent, editable }: EditorProps) => {
-  const { resolvedTheme } = useTheme();
-  const { edgestore } = useEdgeStore();
+export function Editor({ initialContent = "", documentId }: EditorProps) {
+  const [content, setContent] = useState(initialContent);
+  const update = useMutation(api.documents.update);
 
-  const handleUpload = async (file: File) => {
-    const response = await edgestore.publicFiles.upload({ file });
-    return response.url;
+  const handleChange = (newContent: string) => {
+    setContent(newContent);
+    // Update the document in the database
+    update({ id: documentId as any, content: newContent });
   };
 
-  const editor: BlockNoteEditor = useCreateBlockNote({
-    initialContent: initialContent ? JSON.parse(initialContent) : undefined,
-    uploadFile: handleUpload,
-  });
-
   return (
-    <div>
-      <BlockNoteView
-        editable={editable}
-        editor={editor}
-        onChange={() => {
-          onChange(JSON.stringify(editor.document, null, 2));
-        }}
-        theme={resolvedTheme === "dark" ? "dark" : "light"}
-      />
+    <div className="flex-1 p-6">
+      <div className="max-w-4xl mx-auto">
+        <Textarea
+          value={content}
+          onChange={(e) => handleChange(e.target.value)}
+          placeholder="Start writing your document..."
+          className="min-h-[500px] resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg"
+        />
+      </div>
     </div>
   );
-};
-
-export default Editor;
+}

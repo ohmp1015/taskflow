@@ -1,0 +1,426 @@
+// ✅ FILE: /convex/schema.ts
+
+import { defineSchema, defineTable, v } from "convex/schema";
+
+// Define tables for documents, access control, access requests, and presence
+export default defineSchema({
+  documents: defineTable({
+    title: v.string(),
+    content: v.string(),
+    authorId: v.string(),
+  }),
+
+  documentAccess: defineTable({
+    documentId: v.id("documents"),
+    userId: v.string(),
+    role: v.union(v.literal("viewer"), v.literal("editor")),
+    invitedBy: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_document", ["documentId"])
+    .index("by_user", ["userId"]),
+
+  requestAccess: defineTable({
+    documentId: v.id("documents"),
+    userId: v.string(),
+    reason: v.optional(v.string()),
+    createdAt: v.number(),
+  }),
+
+  presence: defineTable({
+    documentId: v.id("documents"),
+    userId: v.string(),
+    name: v.string(),
+    avatarUrl: v.string(),
+    lastSeen: v.number(),
+  }).index("by_document", ["documentId"]),
+});
+
+
+// ✅ FILE: /convex/documents.ts
+
+import { mutation, query } from "convex/server";
+import { v } from "convex/values";
+
+// Grant document access to another user
+export const grantAccess = mutation({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.string(),
+    role: v.union(v.literal("viewer"), v.literal("editor")),
+    invitedBy: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const exists = await ctx.db
+      .query("documentAccess")
+      .withIndex("by_document", q => q.eq("documentId", args.documentId))
+      .filter(row => row.userId === args.userId)
+      .first();
+
+    if (!exists) {
+      await ctx.db.insert("documentAccess", {
+        ...args,
+        createdAt: Date.now(),
+      });
+    }
+  },
+});
+
+// Get all users with access to a document
+export const getDocumentAccessList = query({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("documentAccess")
+      .withIndex("by_document", q => q.eq("documentId", args.documentId))
+      .collect();
+  },
+});
+
+// Request access to a document
+export const requestAccess = mutation({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.string(),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("requestAccess")
+      .filter(row => row.documentId === args.documentId && row.userId === args.userId)
+      .first();
+
+    if (!existing) {
+      await ctx.db.insert("requestAccess", {
+        ...args,
+        createdAt: Date.now(),
+      });
+    }
+  },
+});
+
+// Get access requests for documents owned by current user
+export const getAccessRequestsForOwner = query({
+  args: { ownerId: v.string() },
+  handler: async (ctx, args) => {
+    const documents = await ctx.db
+      .query("documents")
+      .filter(d => d.authorId === args.ownerId)
+      .collect();
+
+    const requests = await Promise.all(
+      documents.map(doc =>
+        ctx.db
+          .query("requestAccess")
+          .filter(req => req.documentId === doc._id)
+          .collect()
+      )
+    );
+
+    return requests.flat();
+  },
+});
+
+// Delete a request once it's handled
+export const deleteAccessRequest = mutation({
+  args: { requestId: v.id("requestAccess") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.requestId);
+  },
+});
+
+// Verify user has access to document
+export const getDocumentWithAccessCheck = query({
+  args: { documentId: v.id("documents"), userId: v.string() },
+  handler: async (ctx, args) => {
+    const doc = await ctx.db.get(args.documentId);
+    if (!doc) return null;
+
+    if (doc.authorId === args.userId) return doc;
+
+    const access = await ctx.db
+      .query("documentAccess")
+      .withIndex("by_document", q => q.eq("documentId", args.documentId))
+      .filter(row => row.userId === args.userId)
+      .first();
+
+    if (!access) return null;
+
+    return doc;
+  },
+});
+
+// Real-time presence update
+export const updatePresence = mutation({
+  args: {
+    documentId: v.id("documents"),
+    userId: v.string(),
+    name: v.string(),
+    avatarUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("presence")
+      .withIndex("by_document", q => q.eq("documentId", args.documentId))
+      .filter(row => row.userId === args.userId)
+      .first();
+
+    const now = Date.now();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        lastSeen: now,
+        avatarUrl: args.avatarUrl,
+        name: args.name,
+      });
+    } else {
+      await ctx.db.insert("presence", {
+        ...args,
+        lastSeen: now,
+      });
+    }
+  },
+});
+
+// Fetch active users in document (seen within last 30s)
+export const getPresence = query({
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db
+      .query("presence")
+      .withIndex("by_document", q => q.eq("documentId", args.documentId))
+      .filter(row => now - row.lastSeen < 30000)
+      .collect();
+  },
+});
+
+// ✅ FILE: /components/document/presence-avatars.tsx
+
+"use client";
+
+import { useUser } from "@clerk/nextjs";
+import { useEffect } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
+// Props include the current document ID
+interface Props {
+  documentId: string;
+}
+
+// Show avatar bubbles for users currently online
+export function DocumentPresenceAvatars({ documentId }: Props) {
+  const { user } = useUser();
+  const updatePresence = useMutation(api.documents.updatePresence);
+
+  // Query to get currently present users
+  const users = useQuery(api.documents.getPresence, { documentId });
+
+  // Update presence every 10s
+  useEffect(() => {
+    if (!user?.id || !user.fullName) return;
+
+    const interval = setInterval(() => {
+      updatePresence({
+        documentId,
+        userId: user.id,
+        name: user.fullName,
+        avatarUrl: user.imageUrl,
+      });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [user?.id, user?.fullName, user?.imageUrl, documentId, updatePresence]);
+
+  if (!users || users.length === 0) return null;
+
+  return (
+    <div className="absolute top-4 right-4 flex -space-x-3 z-50">
+      {users.map((u) => (
+        <div key={u.userId} title={u.name}>
+          <img
+            src={u.avatarUrl}
+            alt={u.name}
+            className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+// ✅ FILE: /components/document/request-access.tsx
+
+"use client";
+
+import { useUser } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
+
+// Button shown to users without access
+export function RequestAccess({ documentId }: { documentId: string }) {
+  const { user } = useUser();
+  const request = useMutation(api.documents.requestAccess);
+
+  // Send access request
+  const handleRequest = async () => {
+    await request({ documentId, userId: user.id });
+    toast.success("Access requested");
+  };
+
+  return (
+    <div className="p-4 text-center">
+      <p className="mb-2 text-gray-600">You don't have access to this document.</p>
+      <Button onClick={handleRequest}>Request Access</Button>
+    </div>
+  );
+}
+
+
+// ✅ FILE: /components/document/share-access.tsx
+
+"use client";
+
+import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
+
+// Component for sharing a document via user ID
+interface ShareAccessProps {
+  documentId: string;
+  invitedBy: string;
+}
+
+export function ShareAccess({ documentId, invitedBy }: ShareAccessProps) {
+  const [userId, setUserId] = useState("");
+  const [role, setRole] = useState("editor");
+  const grantAccess = useMutation(api.documents.grantAccess);
+
+  // Invite user by ID
+  const handleShare = async () => {
+    if (!userId) return toast.error("User ID is required");
+    await grantAccess({ documentId, userId, role, invitedBy });
+    toast.success("Access granted");
+    setUserId("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <Input
+          placeholder="Enter User ID"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+        />
+        <Button onClick={handleShare}>Invite</Button>
+      </div>
+    </div>
+  );
+}
+
+
+// ✅ FILE: /app/(main)/requests/page.tsx
+
+"use client";
+
+import { useUser } from "@clerk/nextjs";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { toast } from "react-hot-toast";
+
+// Page showing pending access requests to the owner
+export default function AccessRequestsPage() {
+  const { user } = useUser();
+  const requests = useQuery(api.documents.getAccessRequestsForOwner, {
+    ownerId: user.id,
+  });
+  const grant = useMutation(api.documents.grantAccess);
+  const remove = useMutation(api.documents.deleteAccessRequest);
+
+  // Approve a request
+  const approve = async (req: any) => {
+    await grant({
+      documentId: req.documentId,
+      userId: req.userId,
+      role: "editor",
+      invitedBy: user.id,
+    });
+    await remove({ requestId: req._id });
+    toast.success("Access granted");
+  };
+
+  if (!requests) return <p>Loading...</p>;
+
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-semibold mb-4">Access Requests</h1>
+      {requests.map((r) => (
+        <div
+          key={r._id}
+          className="flex items-center justify-between border p-3 mb-2 rounded"
+        >
+          <div>
+            <p className="font-medium">User: {r.userId}</p>
+            <p className="text-sm text-gray-500">Document ID: {r.documentId}</p>
+          </div>
+          <Button onClick={() => approve(r)}>Approve</Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
+// ✅ FILE: /app/(main)/document/[id]/page.tsx
+
+"use client";
+
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Spinner } from "@/components/spinner";
+import { Editor } from "@/components/editor";
+import { RequestAccess } from "@/components/document/request-access";
+import { ShareAccess } from "@/components/document/share-access";
+import { DocumentPresenceAvatars } from "@/components/document/presence-avatars";
+
+// Document editor page that handles permission logic
+export default function DocumentEditorPage({ params }: { params: { id: string } }) {
+  const { user } = useUser();
+  const router = useRouter();
+  const documentId = params.id;
+
+  const doc = useQuery(api.documents.getDocumentWithAccessCheck, {
+    documentId,
+    userId: user?.id || "",
+  });
+
+  // Loading state
+  if (doc === undefined) return <Spinner />;
+  // If no access, show request button
+  if (!doc) return <RequestAccess documentId={documentId} />;
+
+  return (
+    <div className="relative h-full">
+      {/* Show live avatars */}
+      <DocumentPresenceAvatars documentId={documentId} />
+
+      {/* Share document access */}
+      <div className="absolute top-4 left-4">
+        <ShareAccess documentId={documentId} invitedBy={user.id} />
+      </div>
+
+      {/* Main editor */}
+      <Editor initialContent={doc.content} documentId={documentId} />
+    </div>
+  );
+}

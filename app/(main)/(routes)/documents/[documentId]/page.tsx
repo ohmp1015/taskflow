@@ -1,61 +1,55 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { useMutation, useQuery } from "convex/react";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Toolbar } from "@/components/toolbar";
-import { Cover } from "@/components/cover";
-import { useMemo } from "react";
-import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
-import { Id } from "@/convex/_generated/dataModel";
+import { Spinner } from "@/components/spinner";
+import { Editor } from "@/components/editor";
+import { ChatToDoc } from "@/components/document/chat-to-doc";
+import { TranslateButton } from "@/components/document/translate-button";
+import { InviteTeamMember } from "@/components/document/invite-team-member";
+import { RequestAccess } from "@/components/document/request-access";
+import { ShareAccess } from "@/components/document/share-access";
+import { DocumentPresenceAvatars } from "@/components/document/presence-avatars";
 
-export default function DocumentIdPage() {
-  const params = useParams();
-  const documentId = params?.documentId as string | undefined;
-  const Editor = useMemo(
-    () => dynamic(() => import("@/components/editor"), { ssr: false }),
-    [],
-  );
+export default function DocumentEditorPage({ params }: { params: { documentId: string } }) {
+  const { user } = useUser();
+  const router = useRouter();
+  const documentId = params.documentId;
 
-  const document = useQuery(
-    api.documents.getById,
-    documentId ? { documentId: documentId as Id<"documents"> } : "skip",
-  );
+  const doc = useQuery(api.documents.getDocumentWithAccessCheck, {
+    documentId,
+    userId: user?.id || "",
+  });
 
-  const update = useMutation(api.documents.update);
-
-  const onChange = (content: string) => {
-    if (!documentId) return;
-    update({ id: documentId as Id<"documents">, content });
-  };
-
-  if (document === undefined) {
-    return (
-      <div>
-        <Cover.Skeleton />
-        <div className="md:max-w-3xl lg:max-w-4xl mx-auto mt-10">
-          <div className="space-y-4 pl-8 pt-4">
-            <Skeleton className="h-14 w-[50%]" />
-            <Skeleton className="h-4 w-[80%]" />
-            <Skeleton className="h-4 w-[40%]" />
-            <Skeleton className="h-4 w-[60%]" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (document === null) {
-    return <div>Not found</div>;
-  }
+  // Loading state
+  if (doc === undefined) return <Spinner />;
+  // If no access, show request button
+  if (!doc) return <RequestAccess documentId={documentId} />;
 
   return (
-    <div className="pb-40">
-      <Cover url={document.coverImage} />
-      <div className="md:max-w-3xl lg:max-w-4xl mx-auto">
-        <Toolbar initialData={document} />
-        <Editor onChange={onChange} initialContent={document.content} />
+    <div className="relative h-full">
+      {/* Show live avatars */}
+      <DocumentPresenceAvatars documentId={documentId} />
+
+      {/* Share document access */}
+      <div className="absolute top-4 left-4 z-10">
+        <ShareAccess documentId={documentId} invitedBy={user?.id || ""} />
+      </div>
+
+      {/* Invite team members */}
+      <div className="absolute top-4 left-80 z-10">
+        <InviteTeamMember documentId={documentId} />
+      </div>
+
+      {/* Main editor */}
+      <Editor initialContent={doc.content} documentId={documentId} />
+
+      {/* Chat and translation components */}
+      <div className="fixed bottom-4 right-4 z-10 space-y-4">
+        <ChatToDoc content={doc.content} documentId={documentId} />
+        <TranslateButton content={doc.content} />
       </div>
     </div>
   );

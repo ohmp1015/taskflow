@@ -25,7 +25,7 @@ export default function ErrorPage() {
       <h2 className="text-xl font-medium">Not Found</h2>
       <p>Could not find requested resource</p>
       <Button asChild>
-        <Link href="/">Go back</Link>
+        <Link href="">Go back</Link>
       </Button>
     </div>
   );
