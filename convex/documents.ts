@@ -24,7 +24,7 @@ export const createInvitation = mutation({
     const existingInvitation = await ctx.db
       .query("invitations")
       .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
-      .filter((invitation) => invitation.invitedEmail === args.invitedEmail)
+      .filter((q) => q.eq(q.field("invitedEmail"), args.invitedEmail))
       .first();
 
     if (existingInvitation) {
@@ -153,8 +153,8 @@ export const grantAccess = mutation({
 
     const exists = await ctx.db
       .query("documentAccess")
-      .withIndex("by_document", q => q.eq("documentId", args.documentId))
-      .filter(row => row.userId === args.userId)
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .first();
 
     if (!exists) {
@@ -181,7 +181,7 @@ export const getDocumentAccessList = query({
 
     return await ctx.db
       .query("documentAccess")
-      .withIndex("by_document", q => q.eq("documentId", args.documentId))
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
       .collect();
   },
 });
@@ -196,7 +196,12 @@ export const requestAccess = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("requestAccess")
-      .filter(row => row.documentId === args.documentId && row.userId === args.userId)
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("documentId"), args.documentId),
+          q.eq(q.field("userId"), args.userId)
+        )
+      )
       .first();
 
     if (!existing) {
@@ -214,14 +219,14 @@ export const getAccessRequestsForOwner = query({
   handler: async (ctx, args) => {
     const documents = await ctx.db
       .query("documents")
-      .filter(d => d.userId === args.ownerId)
+      .filter((q) => q.eq(q.field("userId"), args.ownerId))
       .collect();
 
     const requests = await Promise.all(
       documents.map(doc =>
         ctx.db
           .query("requestAccess")
-          .filter(req => req.documentId === doc._id)
+          .filter((q) => q.eq(q.field("documentId"), doc._id))
           .collect()
       )
     );
@@ -249,8 +254,8 @@ export const getDocumentWithAccessCheck = query({
 
     const access = await ctx.db
       .query("documentAccess")
-      .withIndex("by_document", q => q.eq("documentId", args.documentId))
-      .filter(row => row.userId === args.userId)
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .first();
 
     if (!access) return null;
@@ -270,8 +275,8 @@ export const updatePresence = mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("presence")
-      .withIndex("by_document", q => q.eq("documentId", args.documentId))
-      .filter(row => row.userId === args.userId)
+      .withIndex("by_document", (q) => q.eq("documentId", args.documentId))
+      .filter((q) => q.eq(q.field("userId"), args.userId))
       .first();
 
     const now = Date.now();

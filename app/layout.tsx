@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/providers/convex-provider";
 import { Toaster } from "@/components/providers/toaster";
+import { ClerkProvider } from "@clerk/nextjs";
+import { EdgeStoreProvider } from "@/lib/edgestore";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,10 +21,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ConvexClientProvider>
-          {children}
-          <Toaster />
-        </ConvexClientProvider>
+        <ClerkProvider>
+          <ConvexClientProvider>
+            <EdgeStoreProvider>
+              {children}
+              <Toaster />
+            </EdgeStoreProvider>
+          </ConvexClientProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

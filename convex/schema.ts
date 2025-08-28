@@ -1,5 +1,6 @@
 import { defineSchema, defineTable, v } from "convex/schema";
 
+
 export default defineSchema({
   documents: defineTable({
     title: v.string(),
@@ -20,6 +21,13 @@ export default defineSchema({
     documentId: v.id("documents"),
     targetLang: v.string(),
     content: v.string(),
+    createdAt: v.number(),
+  }).index("by_document", ["documentId"]),
+
+  chats: defineTable({
+    documentId: v.id("documents"),
+    question: v.string(),
+    answer: v.string(),
     createdAt: v.number(),
   }).index("by_document", ["documentId"]),
 
